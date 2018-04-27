@@ -25,6 +25,8 @@ const radinsToDegrees = (radians) => {
   return radians * 180 / Math.PI;
 }
 
+const Tab = "  ";
+
 //
 // Point
 //
@@ -66,6 +68,42 @@ const RotationUnitVector = {
   yAxis: p(1, 0, 0),
   zAxis: p(0, 1, 0),
 }
+
+
+//
+// Translation
+//
+function Translation(x, y, z) {
+  this.x = x;
+  this.y = y;
+  this.z = z;
+
+  this.scadWithIndent = function(indent) {
+    return `${Tab.repeat(indent)}translate([${this.x}, ${this.y}, ${this.z}]) {`
+  }
+}
+
+function translation(x, y, z) {
+  return new Translation(x, y, z);
+}
+
+//
+// Rotation
+//
+function Rotation(x, y, z) {
+  this.x = x;
+  this.y = y;
+  this.z = z;
+
+  this.scadWithIndent = function(indent) {
+    return `${Tab.repeat(indent)}rotate([${this.x}, ${this.y}, ${this.z}]) {`
+  }
+}
+
+function rotation(x, y, z) {
+  return new Rotation(x, y, z);
+}
+
  
 //
 // Cylinder
@@ -73,67 +111,68 @@ const RotationUnitVector = {
 function Cylinder(diameter, height) {
   this.diameter = diameter;
   this.height = height;
-  this.origin = p.origin;
-  this.orientation = {
-    xAxis: Object.assign({}, RotationUnitVector.xAxis),
-    yAxis: Object.assign({}, RotationUnitVector.yAxis),
-    zAxis: Object.assign({}, RotationUnitVector.zAxis),
-  }
+  this.transforms = [];
 
   this.translate = function(x, y, z) {
-    const r = gateValue.bind(this)(z);
-    this.origin.translate(p(x, y, r))
+    const x2 = parseShorthand.bind(this)(x);
+    const y2 = parseShorthand.bind(this)(y);
+    const z2 = parseShorthand.bind(this)(z);
+    this.transforms.push(translation(x2, y2, z2));
     return this;
   }
 
   this.rotate = function(x, y, z) {
-    // Y - Axis
-    //     | cos θ    0   sin θ| |x|   | x cos θ + z sin θ|   |x'|
-    //     |   0      1       0| |y| = |         y        | = |y'|
-    //     |−sin θ    0   cos θ| |z|   |−x sin θ + z cos θ|   |z'|
-    const radiansY = degreesToRadians(y);
-    const cosY = Math.cos(radiansY);
-    const sinY = Math.sin(radiansY);
-
-    const yAxisX = this.orientation.yAxis.x;
-    const yAxisY = this.orientation.yAxis.y;
-    const yAxisZ = this.orientation.yAxis.z;
-
-    const yAxis = [
-      [yAxisX*cosY + yAxisZ*sinY],
-      [yAxisY],
-      [-yAxisX*sinY + yAxisZ*cosY],
-    ]
-
-    this.orientation.yAxis = pointFromMatrix(yAxis);
-
-    // Z - Axis
-    //     |cos θ   −sin θ   0| |x|   |x cos θ − y sin θ|   |x'|
-    //     |sin θ    cos θ   0| |y| = |x sin θ + y cos θ| = |y'|
-    //     |  0       0      1| |z|   |        z        |   |z'|
-    const radiansZ = degreesToRadians(z);
-    const cosZ = Math.cos(radiansZ);
-    const sinZ = Math.sin(radiansZ);
-
-    const oX = this.orientation.zAxis.x;
-    const oY = this.orientation.zAxis.y;
-    const oZ = this.orientation.zAxis.z;
-
-    const zAxis = [
-      [oX*cosZ - oY*sinZ],
-      [oX*sinZ + oY*cosZ],
-      [oZ]
-    ]
-
-    this.orientation.zAxis = pointFromMatrix(zAxis);
-    // this.orientation.sanitize();
-
+    this.transforms.push(rotation(x, y, z));
     return this;
   }
+
+  // this.rotate = function(x, y, z) {
+  //   // Y - Axis
+  //   //     | cos θ    0   sin θ| |x|   | x cos θ + z sin θ|   |x'|
+  //   //     |   0      1       0| |y| = |         y        | = |y'|
+  //   //     |−sin θ    0   cos θ| |z|   |−x sin θ + z cos θ|   |z'|
+  //   const radiansY = degreesToRadians(y);
+  //   const cosY = Math.cos(radiansY);
+  //   const sinY = Math.sin(radiansY);
+
+  //   const yAxisX = this.orientation.yAxis.x;
+  //   const yAxisY = this.orientation.yAxis.y;
+  //   const yAxisZ = this.orientation.yAxis.z;
+
+  //   const yAxis = [
+  //     [yAxisX*cosY + yAxisZ*sinY],
+  //     [yAxisY],
+  //     [-yAxisX*sinY + yAxisZ*cosY],
+  //   ]
+
+  //   this.orientation.yAxis = pointFromMatrix(yAxis);
+
+  //   // Z - Axis
+  //   //     |cos θ   −sin θ   0| |x|   |x cos θ − y sin θ|   |x'|
+  //   //     |sin θ    cos θ   0| |y| = |x sin θ + y cos θ| = |y'|
+  //   //     |  0       0      1| |z|   |        z        |   |z'|
+  //   const radiansZ = degreesToRadians(z);
+  //   const cosZ = Math.cos(radiansZ);
+  //   const sinZ = Math.sin(radiansZ);
+
+  //   const oX = this.orientation.zAxis.x;
+  //   const oY = this.orientation.zAxis.y;
+  //   const oZ = this.orientation.zAxis.z;
+
+  //   const zAxis = [
+  //     [oX*cosZ - oY*sinZ],
+  //     [oX*sinZ + oY*cosZ],
+  //     [oZ]
+  //   ]
+
+  //   this.orientation.zAxis = pointFromMatrix(zAxis);
+  //   // this.orientation.sanitize();
+
+  //   return this;
+  // }
 }
 
-function gateValue(x){
-  console.log(typeof x);
+function parseShorthand(x){
   if (typeof x === 'string') {
     switch (x) {
       case _.height:
@@ -172,18 +211,44 @@ const rotate = (orientation, shape) => {
   }`
 }
 
+// rotate([0, 45, 0]) {
+// }
+
+// rotate([0, 45, 0]) {
+//   translate([0, 0, 6]) {
+//     cylinder(r = 0.5, h = 12, center = true, $fn = 32);
+//   }
+// }
+
 Cylinder.prototype.scad = function() {
-  const shapeScad = `cylinder(r = ${this.diameter / 2}, h = ${this.height}, center = true, $fn = 32);`
-  return rotate(this.orientation,
-    translate(this.origin, shapeScad)
-  );  
+  let lines = [];
+  let i = 0;
+  while (i < this.transforms.length) {
+    const transform = this.transforms[i];
+    lines.push(transform.scadWithIndent(i));
+    i++;
+  }
+
+  const shapeScad = `${Tab.repeat(i)}cylinder(r = ${this.diameter / 2}, h = ${this.height}, center = true, $fn = 32);`
+  lines.push(shapeScad);
+  i--;
+
+  while (i >= 0) {
+    lines.push(Tab.repeat(i) + '}');
+    i--;
+  }
+
+  return lines.join('\n');
 } 
 
 
 
 const wheel = cylinder(1, 12)
               .translate(0, 0, _.half_height)
-              .rotate(0, 45, 0);
+              .rotate(10, 20, 30)
+              .translate(0, _.diameter, _.half_height)
+              .translate(0, _.height, 3);
+              // .rotate(0, 45, 0);
 // const whee  = cylinder(1, 12);
 console.log(wheel)
 const car = wheel.scad();
