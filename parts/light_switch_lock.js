@@ -1,11 +1,11 @@
 
 const mathjs = require('../node_modules/mathjs');
-const { p, pointFromMatrix } = require('./Point');
-const { cylinder } = require('./Cylinder');
-const { cube } = require('./Cube');
-const { Tab, eps } = require('./Constants');
-const { scad_export, _ } = require('./Utilities');
-const { difference } = require('./Collections');
+const { p, pointFromMatrix } = require('../src/Point');
+const { cylinder } = require('../src/Cylinder');
+const { cube } = require('../src/Cube');
+const { Tab, eps } = require('../src/Constants');
+const { scad_export, _ } = require('../src/Utilities');
+const { difference } = require('../src/Collections');
 
 
 //
